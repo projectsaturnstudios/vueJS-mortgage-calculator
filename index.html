@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Mortgage Calc Sample</title>
+
+        <!-- This is a comment inside HTML comment syntax -->
+
+        <!-- This is the reference the vueJS via CDN -->
+        <!-- We define the reference here as opposed to the bottom so the JS loads into memory right away so we don't have to initialize it when the DOM is ready -->
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+        <!-- CSS Styles go here -->
+        <style rel="stylesheet">
+            /* This is a comment inside CSS comment syntax */
+            .no-show {
+                display: none;
+            }
+
+            #app {
+                display: grid;
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr;
+            }
+
+            #content {
+                /* Coding Practice - place the style for the grid placement first before creating new grid styles */
+                grid-column: 1;
+                grid-row: 1;
+
+                align-self: center;
+                justify-self: center;
+
+                display: grid;
+                grid-template-columns: 1fr;
+                grid-template-rows: 25% 75%
+            }
+
+            #titleHead {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            #calcSection {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            /* Every element of class input-field will auto-inherit this grid for a more dynamic approach */
+            .input-field {
+                display: grid;
+                grid-template-columns: 50% 50%;
+                grid-template-rows: 1fr;
+
+                padding-top: 1em;
+            }
+
+            .oneEmOfTopPadding {
+                padding-top: 1em;
+            }
+        </style>
+    </head>
+
+    <body>
+    <!-- I tend to make ids camelCase and classes delimited with a dash '-' -->
+    <div id="app" class="no-show">
+        <div id="content">
+            <!--vueJS template tokens are indicated with the double brackets {{ vueJS-statement }} -->
+            <div id="titleHead">
+                <h1>{{ title }}</h1>
+            </div>
+
+            <div id="calcSection" class="oneEmOfTopPadding">
+                <!-- Called a form but we don't need an actual form -->
+                <div id="calcForm">
+                    <div id="aprField" class="input-field">
+                        <label class="input-label">APR %</label>
+                        <input type="text" id="aprInputField" v-model="aprInput" />
+                    </div>
+                    <div id="loanTermField" class="input-field">
+                        <label class="input-label">Loan Term (Years)</label>
+                        <input type="text" id="termInputField" v-model="months"/>
+                    </div>
+                    <div id="loanAmtField" class="input-field">
+                        <label class="input-label">Loan Amount ($)</label>
+                        <input type="text" id="amtInputField" v-model="loanAmt" />
+                    </div>
+                    <div id="paymentsField" class="input-field">
+                        <label class="input-label">Monthly Payment</label>
+                        <!-- Only one of version of these input fields will show based on whether or not isResponsive == true -->
+                        <input v-if="isResponsive === true" type="text" class="paymentsResultField" v-model="paymentAmt" disabled/> <!-- will NOT automatically update -->
+                        <input v-else type="text" class="paymentsResultField" v-model="monthlyPaymentAmt" disabled/> <!-- WILL automatically update -->
+                    </div>
+
+                    <div id="controlPanel" class="input-field">
+                        <div id="responsiveCheckBoxSection">
+                            <input type="checkbox" value="1" v-model="isResponsive"/>
+                            <label class="input-label">Manually Update</label>
+                        </div>
+
+                        <div id="actualControlPanel">
+                            <button type="button" :class="shouldCalcBtnAppear" v-on:click="computeMonthlyPayments()">Calculate</button>
+                            <button type="button" v-on:click="resetForm()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </body>
+
+    <script>
+        //This is a comment inside JavaScript comment syntax
+
+        //We define the vueJS here at the bottom so the dom is available and rendered by the time the code reaches here
+        let app = new Vue({
+            el: '#app',
+            data: { //values defined here referenced in the DOM will update in the DOM as soon as they are modified
+                title: 'Simple Mortgage Calculator',
+                isResponsive: true,
+                aprInput: 0,
+                months: 0,
+                loanAmt: 0,
+                paymentAmt: 0
+            },
+            computed: {
+                //think of these functions as values just like in 'data' but requires calculation before output.
+                // Should these functions be references in the DOM and any data variables  mentioned inside these functions change, these functions will trigger.
+                shouldCalcBtnAppear: function shouldCalcBtnAppear() {
+                    let style_class = 'no-show';
+
+                    if(this.isResponsive === true) {
+                        style_class = '';
+                    }
+
+                    return style_class;
+                },
+                monthlyPaymentAmt: function () {
+                    this.computeMonthlyPayments();
+
+                    return this.paymentAmt;
+                }
+            },
+            methods : {
+                //call these methods from nywhere at anytime
+                resetForm: function resetForm() {
+                    this.isResponsive = true;
+                    this.aprInput = 0;
+                    this.months = 0;
+                    this.loanAmt = 0;
+                    this.paymentAmt = 0;
+                },
+                calculateAPR: function () {
+                    let apr = 0;
+                    if(parseFloat(this.aprInput) !== 0) {
+                        apr = parseFloat(this.aprInput / 1200);
+                    }
+
+                    return apr;
+                },
+                computeMonthlyPayments: function() {
+                    let results = 0;
+
+                    let L = this.loanAmt;
+                    let c = this.calculateAPR();
+                    let n = this.months * 12;
+
+                    let partI = L *(c * Math.pow((1 + c), n));
+                    let partII = (Math.pow((1 + c), n) - 1);
+
+                    let partIII = partI/partII;
+
+                    if(partII !== 0) { // We don't bother with divide by zero BS
+                        let paymentAmt = parseFloat( partIII );
+
+                        if(paymentAmt !== 0)
+                        {
+                            results = parseFloat(paymentAmt).toFixed(2);
+                        }
+                    }
+
+                    this.paymentAmt = results;
+                }
+            },
+            mounted: function () {
+                //mounted is the first thing that runs after this vueJS instance has been created
+                //The vueJS controllable portion by default is hidden so the markup doesn't get rendered till vueJS gets ahold of it, then we make reappear
+                document.getElementById("app").classList.remove('no-show');
+            }
+        })
+    </script>
+</html>
